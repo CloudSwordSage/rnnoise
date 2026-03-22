@@ -122,14 +122,8 @@ if((NOT USE_EXTERNAL_MODEL AND (NOT RNNOISE_MODEL_SOURCE_C OR NOT RNNOISE_MODEL_
   rnnoise_locate_model_files(RNNOISE_MODEL_SOURCE_C RNNOISE_MODEL_HEADER RNNOISE_MODEL_HEADER_DIR)
 endif()
 
-if(USE_EXTERNAL_MODEL)
-  if(NOT RNNOISE_MODEL_HEADER)
-    message(FATAL_ERROR "rnnoise_data.h is required but was not found.")
-  endif()
-else()
-  if(NOT RNNOISE_MODEL_SOURCE_C OR NOT RNNOISE_MODEL_HEADER)
-    message(FATAL_ERROR "rnnoise_data.c/rnnoise_data.h are required but were not found.")
-  endif()
+if(NOT RNNOISE_MODEL_SOURCE_C OR NOT RNNOISE_MODEL_HEADER)
+  message(FATAL_ERROR "rnnoise_data.c/rnnoise_data.h are required but were not found.")
 endif()
 
 set(RNNOISE_SOURCES
@@ -142,11 +136,8 @@ set(RNNOISE_SOURCES
   src/nnet_default.c
   src/parse_lpcnet_weights.c
   src/rnnoise_tables.c
+  ${RNNOISE_MODEL_SOURCE_C}
 )
-
-if(NOT USE_EXTERNAL_MODEL)
-  list(APPEND RNNOISE_SOURCES "${RNNOISE_MODEL_SOURCE_C}")
-endif()
 
 if(RNNOISE_ENABLE_X86_RTCD)
   list(APPEND RNNOISE_SOURCES
@@ -162,6 +153,7 @@ add_library(rnnoise::rnnoise ALIAS rnnoise)
 
 target_include_directories(rnnoise
   PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
   PRIVATE
@@ -177,7 +169,10 @@ endif()
 
 if(RNNOISE_ENABLE_X86_RTCD)
   target_compile_definitions(rnnoise PRIVATE RNN_ENABLE_X86_RTCD CPU_INFO_BY_ASM)
-  if(NOT MSVC)
+  if(MSVC)
+    set_source_files_properties(src/x86/nnet_sse4_1.c PROPERTIES COMPILE_OPTIONS "/arch:AVX2" COMPILE_DEFINITIONS "__SSE4_1__")
+    set_source_files_properties(src/x86/nnet_avx2.c PROPERTIES COMPILE_OPTIONS "/arch:AVX2" COMPILE_DEFINITIONS "__AVX2__")
+  else()
     set_source_files_properties(src/x86/nnet_sse4_1.c PROPERTIES COMPILE_OPTIONS "-msse4.1")
     set_source_files_properties(src/x86/nnet_avx2.c PROPERTIES COMPILE_OPTIONS "-mavx;-mfma;-mavx2")
   endif()
