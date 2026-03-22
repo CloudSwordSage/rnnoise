@@ -1,0 +1,8 @@
+@PACKAGE_INIT@
+
+include(${CMAKE_CURRENT_LIST_DIR}/rnnoise-targets.cmake)
+
+set(rnnoise_INCLUDE_DIRS "@PACKAGE_CMAKE_INSTALL_INCLUDEDIR@")
+set(rnnoise_LIBRARIES rnnoise::rnnoise)
+
+check_required_components(rnnoise)
